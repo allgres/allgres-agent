@@ -21,7 +21,7 @@ rpm_topdir="$(rpm --eval '%{_topdir}')"
 find "$rpm_topdir/RPMS" -type f -name 'allgres-*.rpm' -print
 ```
 
-The script installs build dependencies, creates a source archive from committed files, runs `rpmbuild` and `rpmlint`, and checks that the extension files are present. It targets Fedora 43's PostgreSQL 18 packaging. `pgcrypto` and `pgvector` remain optional; install the matching PostgreSQL packages if you need those features.
+The script installs build dependencies, creates a source archive from committed files, runs `rpmbuild` and `rpmlint`, and checks that the extension files are present. It targets Fedora 43's PostgreSQL 18 packaging. `pgcrypto` and `pgvector` remain optional; install the matching PostgreSQL packages if you need those features. On Fedora 43, `postgresql-contrib` supplies `pgcrypto`.
 
 ## Install the locally built RPM
 
@@ -41,4 +41,4 @@ sudo -u postgres psql -d postgres -v ON_ERROR_STOP=1 \
 
 Use `SHOW config_file;` in `psql` to locate the active configuration file and your distribution's PostgreSQL service to restart it. The dashboard listens on `127.0.0.1:8088` by default. Follow the [source install guide](source-install.md) for first-admin setup, PostgreSQL service environment variables, and verification, and the [security model](../security.md) before exposing the dashboard.
 
-The RPM build and lint are configured in CI and run again on an alpha tag before its RPM is attached to the release. A local Fedora 43 container build passed `rpmlint` with no errors or warnings, and the package installed with `dnf`. A PostgreSQL runtime smoke test using the installed RPM remains open; check [open alpha readiness](../open-alpha-readiness.md) for the current status.
+The RPM build and lint run in CI and on alpha tags before the RPM is attached to the release. The published `v0.1.0-alpha.1` RPM was downloaded into a clean Fedora 43 container, installed with `dnf`, and used to initialize and start PostgreSQL 18.6 with `shared_preload_libraries=allgres`. `CREATE EXTENSION allgres` returned version `0.1.0-alpha.1`. `fn_selftest()` passed 212 cases without optional `pgcrypto`, and 361 cases with `postgresql-contrib` and `CREATE EXTENSION pgcrypto` (0 failures in both runs). This was a disposable container smoke test, not a systemd service or host upgrade test.

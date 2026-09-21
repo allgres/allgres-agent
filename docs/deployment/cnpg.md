@@ -35,7 +35,7 @@ version tag when one is pushed. Wait for the image workflow to finish before
 pulling a new image:
 
 ```bash
-docker pull ghcr.io/allgres/allgres-agent-cnpg-ext:main
+docker pull ghcr.io/allgres/allgres-agent-cnpg-ext:v0.1.0-alpha.1
 ```
 
 Use that directly as `cnpg/cluster-example.yaml`'s `image.reference` and
@@ -66,13 +66,12 @@ own), and a companion `Database` CR is what actually runs `CREATE
 EXTENSION allgres;` once CNPG reconciles it. Read that file's own header
 comment for what each field does before applying it.
 
-Not verified end to end against a real running cluster as of this
-writing — no Kubernetes cluster was available in the environment this was
-built in. The image build itself has since been confirmed by a real test:
-the assumption that the base image's apt sources carry
-`postgresql-server-dev-${PG_MAJOR}` the same way they carry the
-`postgresql-${PG_MAJOR}` packages CNPG's own extension images (e.g.
-`pgvector`) install from there held up fine; the one real mistake that
-build hit was passing the wrong build context (see the `docker build`
-block above), now caught early by `cnpg/Dockerfile`'s own check instead of
-surfacing as a confusing `cargo-pgrx` error.
+The published `v0.1.0-alpha.1` extension image was verified on a local
+Kubernetes 1.36.4/k3s cluster with containerd 2.3.2 and CNPG 1.30.0. A
+single-instance PostgreSQL 18.6 `Cluster` reached Ready, the `Database`
+resource applied `pgcrypto` and `allgres` version `0.1.0-alpha.1`,
+`shared_preload_libraries` loaded `allgres`, and `fn_selftest()` reported
+361 passed and 0 failed. The `allgres runtime` worker ran and a pod port
+forward to `/healthz` returned HTTP 200. This was an isolated local smoke
+test; the three-instance example, failover, and a public-facing dashboard
+were not exercised. The image build also passed locally and in CI.

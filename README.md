@@ -30,7 +30,7 @@ Open **http://127.0.0.1:8088**. The bootstrap script waits for health, creates a
 
 ### CNPG: add Allgres to your cluster
 
-Build the extension image from the repository root, or use `ghcr.io/allgres/allgres-agent-cnpg-ext:main` after its image workflow completes. The [CNPG guide](docs/deployment/cnpg.md) and [`cnpg/cluster-example.yaml`](cnpg/cluster-example.yaml) show the `Cluster` and `Database` resources. This path requires the CNPG operator, PostgreSQL 18, and Kubernetes ImageVolume support. The image build is covered by CI; a live cluster installation still needs end-to-end verification.
+Build the extension image from the repository root, or use `ghcr.io/allgres/allgres-agent-cnpg-ext:v0.1.0-alpha.1`. The [CNPG guide](docs/deployment/cnpg.md) and [`cnpg/cluster-example.yaml`](cnpg/cluster-example.yaml) show the `Cluster` and `Database` resources. This path requires the CNPG operator, PostgreSQL 18, and Kubernetes ImageVolume support. A live Kubernetes 1.36/containerd 2.3 cluster passed extension creation, 361 self-tests, worker startup, and the dashboard health check.
 
 ### Source code: install into PostgreSQL you manage
 
@@ -59,7 +59,7 @@ No Node, Python, Redis, RabbitMQ, or separate web server is required at runtime.
 
 ## Alpha status
 
-The repository includes CI jobs for native PostgreSQL 16–18, Docker smoke tests, a CNPG extension-image build, browser navigation, and RPM build/lint. Check the repository's [Actions](https://github.com/allgres/allgres-agent/actions) for the current commit's result. Local `nerdctl` checks passed for the Docker runtime, CNPG image build, and Fedora RPM build/install. The [readiness notes](docs/open-alpha-readiness.md) and [known issues](KNOWN_ISSUES.md) track remaining work, including live CNPG and RPM runtime validation.
+The repository includes CI jobs for native PostgreSQL 16–18, Docker smoke tests, a CNPG extension-image build, browser navigation, and RPM build/lint. Check the repository's [Actions](https://github.com/allgres/allgres-agent/actions) for the current commit's result. Local `nerdctl` checks passed for the Docker runtime and published Fedora RPM. The published CNPG image passed a live Kubernetes smoke test. The [readiness notes](docs/open-alpha-readiness.md) and [known issues](KNOWN_ISSUES.md) track remaining work.
 
 ## Known limitations
 

@@ -27,12 +27,9 @@ USER 0
 # only shows up as a mysterious dlopen failure in a real cluster, not a
 # build error here.
 #
-# UNVERIFIED (no Docker daemon in the environment this Dockerfile was
-# written in -- see docs/deployment/cnpg.md): this assumes the
-# PGDG apt repo that gives this base image its own postgresql-${PG_MAJOR}
-# packages also has postgresql-server-dev-${PG_MAJOR} available from the
-# same source. If this RUN fails on "Unable to locate package", that
-# assumption is the first thing to check.
+# The matching postgresql-server-dev-${PG_MAJOR} package is available from
+# this image's apt repositories; both the image build and a live CNPG
+# ImageVolume deployment have been verified (docs/deployment/cnpg.md).
 #
 # libssl-dev: cargo-pgrx's own openssl-sys dependency needs it directly,
 # not just PostgreSQL's own SSL support -- postgresql-server-dev-${PG_MAJOR}
