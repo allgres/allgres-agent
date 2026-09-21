@@ -1,0 +1,13 @@
+/target/
+**/*.rs.bk
+
+# Local overrides for docker compose (POSTGRES_PASSWORD, ALLGRES_SECRET_KEY,
+# ALLGRES_DASHBOARD_TOKEN). Never commit these.
+.env
+.env.*
+!.env.example
+
+# Local PostgreSQL data directories created by nerdctl/compose on Windows.
+# They contain live database files and must never enter Git or an image build.
+*-pgdata/
+pgdata/
