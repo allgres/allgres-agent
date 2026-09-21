@@ -15,7 +15,7 @@ Allgres turns PostgreSQL into an agent control plane. A PL/pgSQL state machine, 
 | [Docker](docs/deployment/docker.md) | A local trial in minutes | PostgreSQL 17 and Allgres in one container |
 | [CNPG](docs/deployment/cnpg.md) | A CloudNativePG cluster | PostgreSQL 18 extension image and example manifests |
 | [Source code](docs/deployment/source-install.md) | An existing PostgreSQL 16, 17, or 18 server | Build and install the extension with `make` |
-| [RPM](docs/deployment/rpm.md) | Fedora 43 with PostgreSQL 18 | Build, inspect, and install a native package |
+| [RPM](docs/deployment/rpm.md) | Fedora 43 with PostgreSQL 18 | Download or build and install a native package |
 
 ### Docker: the fastest first run
 
@@ -45,7 +45,7 @@ Install the matching PostgreSQL server development package, C toolchain, and Ope
 
 ### RPM: package PostgreSQL 18
 
-The [RPM guide](docs/deployment/rpm.md) builds the package on Fedora 43 from tracked source, checks its contents, then installs it into PostgreSQL 18. RPM is currently a source-built alpha path; a downloadable release RPM is not yet published.
+The [RPM guide](docs/deployment/rpm.md) covers the Fedora 43 package for PostgreSQL 18, including the release download and a build-from-source alternative.
 
 ## What runs inside Postgres
 
@@ -59,7 +59,7 @@ No Node, Python, Redis, RabbitMQ, or separate web server is required at runtime.
 
 ## Alpha status
 
-The repository includes CI jobs for native PostgreSQL 16–18, Docker smoke tests, a CNPG extension-image build, browser navigation, and RPM build/lint. A workflow definition is not a passing run: check the repository's [Actions](https://github.com/allgres/allgres-agent/actions) before relying on a particular commit. Local `nerdctl` checks passed for the Docker runtime, CNPG image build, and Fedora RPM build/install. The [readiness notes](docs/open-alpha-readiness.md) and [known issues](KNOWN_ISSUES.md) track remaining work, including live CNPG and RPM runtime validation. No release tag or downloadable RPM is implied by this initial source publication.
+The repository includes CI jobs for native PostgreSQL 16–18, Docker smoke tests, a CNPG extension-image build, browser navigation, and RPM build/lint. Check the repository's [Actions](https://github.com/allgres/allgres-agent/actions) for the current commit's result. Local `nerdctl` checks passed for the Docker runtime, CNPG image build, and Fedora RPM build/install. The [readiness notes](docs/open-alpha-readiness.md) and [known issues](KNOWN_ISSUES.md) track remaining work, including live CNPG and RPM runtime validation.
 
 ## Known limitations
 
