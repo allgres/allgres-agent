@@ -18,7 +18,7 @@ The script installs build dependencies, creates a source archive from committed 
 
 ```bash
 rpm_topdir="$(rpm --eval '%{_topdir}')"
-sudo dnf install "$rpm_topdir"/RPMS/*/allgres-*.rpm
+sudo dnf install "$rpm_topdir"/RPMS/*/allgres-[0-9]*.rpm
 ```
 
 Set `shared_preload_libraries = 'allgres'` in the server's `postgresql.conf`, restart PostgreSQL, then create the extension in each database that will use it:
@@ -32,4 +32,4 @@ sudo -u postgres psql -d postgres -v ON_ERROR_STOP=1 \
 
 Use `SHOW config_file;` in `psql` to locate the active configuration file and your distribution's PostgreSQL service to restart it. The dashboard listens on `127.0.0.1:8088` by default. Follow the [source install guide](source-install.md) for first-admin setup, PostgreSQL service environment variables, and verification, and the [security model](../security.md) before exposing the dashboard.
 
-The RPM build and lint are configured in CI. A fresh installation and runtime smoke test of the RPM remain an open release gate; check [open alpha readiness](../open-alpha-readiness.md) for the current status. Release publication is separate from this source-built path.
+The RPM build and lint are configured in CI. A local Fedora 43 container build passed `rpmlint` with no errors or warnings, and the package installed with `dnf`. A PostgreSQL runtime smoke test using the installed RPM remains an open release gate; check [open alpha readiness](../open-alpha-readiness.md) for the current status. Release publication is separate from this source-built path.

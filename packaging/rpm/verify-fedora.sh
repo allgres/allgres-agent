@@ -2,7 +2,8 @@
 set -eu
 
 # Run inside an ephemeral Fedora 43 container or the CI Fedora job.
-cd "${GITHUB_WORKSPACE:-/src}"
+# Resolve the checkout from this script so it works in both mount layouts.
+cd "$(dirname "$0")/../.."
 dnf install -y rpm-build rpmdevtools rpmlint cargo rustfmt gcc clang openssl-devel pkgconf-pkg-config git tar gzip postgresql-server-devel postgresql-server
 rpmdev-setuptree
 rpm_topdir="$(rpm --eval '%{_topdir}')"

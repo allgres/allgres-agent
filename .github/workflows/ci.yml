@@ -135,7 +135,7 @@ jobs:
         run: docker build -f cnpg/Dockerfile -t allgres-cnpg-ci .
       - name: Verify packaged extension files
         run: |
-          id=$(docker create allgres-cnpg-ci)
+          id=$(docker create allgres-cnpg-ci /bin/true)
           docker cp "$id:/lib/allgres.so" /tmp/allgres.so
           docker cp "$id:/share/extension/allgres.control" /tmp/allgres.control
           docker rm "$id"

@@ -21,5 +21,6 @@
 - Recall@5, selection accuracy, first-try success, correction, reuse, execution latency, and remote fixed-call cost are derived from audited search/execution evidence.
 - Stateful MCP initialization, session propagation, initialized notification, stateless compatibility fallback, error separation, OAuth refresh/reconnect state, and secret masking have implementation and existing SQL coverage. A local stateful MCP server transport regression passes; a full worker/SQL-to-MCP integration regression remains pending.
 - CI is configured to build the source extension on PostgreSQL 16/17/18, exercise Docker, build the CNPG extension image, and clean-build/lint a Fedora 43 PostgreSQL 18 RPM. New jobs must pass before release readiness is claimed.
+- Local `nerdctl` verification of the public repository passed: PostgreSQL 17 Docker build, extension self-test (361 passed, 0 failed), SQL smoke and mock end-to-end flow, PostgreSQL 18 CNPG extension-image build, and Fedora 43 RPM build/lint/install. Live CNPG cluster and RPM-installed PostgreSQL runtime checks remain open.
 
 Artifact publication, remote deployment, and production database migration remain deliberately tag/operator controlled; readiness checks do not publish anything.

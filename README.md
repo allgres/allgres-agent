@@ -59,7 +59,7 @@ No Node, Python, Redis, RabbitMQ, or separate web server is required at runtime.
 
 ## Alpha status
 
-The repository includes CI jobs for native PostgreSQL 16–18, Docker smoke tests, a CNPG extension-image build, browser navigation, and RPM build/lint. A workflow definition is not a passing run: check the repository's [Actions](https://github.com/allgres/allgres-agent/actions) before relying on a particular commit. The [readiness notes](docs/open-alpha-readiness.md) and [known issues](KNOWN_ISSUES.md) track remaining work, including live CNPG and RPM installation validation. No release tag or downloadable RPM is implied by this initial source publication.
+The repository includes CI jobs for native PostgreSQL 16–18, Docker smoke tests, a CNPG extension-image build, browser navigation, and RPM build/lint. A workflow definition is not a passing run: check the repository's [Actions](https://github.com/allgres/allgres-agent/actions) before relying on a particular commit. Local `nerdctl` checks passed for the Docker runtime, CNPG image build, and Fedora RPM build/install. The [readiness notes](docs/open-alpha-readiness.md) and [known issues](KNOWN_ISSUES.md) track remaining work, including live CNPG and RPM runtime validation. No release tag or downloadable RPM is implied by this initial source publication.
 
 ## Known limitations
 

@@ -39,7 +39,7 @@ test('regular user sees only scoped chat and personal settings', async ({ page }
     await expect(button).toHaveClass(/active/);
   }
   for (const forbidden of ['Dashboard','SQL','Agents','Memories','Audit'])
-    await expect(page.locator('#nav button',{hasText:forbidden})).toHaveCount(0);
+    await expect(page.locator('#nav').getByRole('button',{name:forbidden,exact:true})).toHaveCount(0);
 });
 
 test('mobile navigation remains keyboard reachable', async ({ page }) => {
