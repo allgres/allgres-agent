@@ -26,7 +26,7 @@ docker compose up -d --build
 ./scripts/bootstrap.sh
 ```
 
-Open **http://127.0.0.1:8088**. The bootstrap script waits for health, creates a first admin, and runs an agent task against the built-in mock provider. For a published prebuilt image after the image workflow completes, use `ghcr.io/allgres/allgres-agent:main`; versioned images appear when a release tag is published. See the [Docker guide](docs/deployment/docker.md) for `docker run`, persistence, and the production overlay.
+Open **http://127.0.0.1:8088**. The bootstrap script waits for health, creates a first admin, and runs an agent task against the built-in mock provider. For the newest published image, pull `ghcr.io/allgres/allgres-agent:latest`; `:main` follows development commits, while `:v0.1.0-alpha.2` pins this release. See the [Docker guide](docs/deployment/docker.md) for `docker run`, persistence, and the production overlay.
 
 After signing in, use the dashboard's **Start a conversation** guide: add a chat provider and run **Test connection** in Settings, choose a provider and model for the **general** agent, then open **General** and send a message. General is a direct conversation; **Team messages** uses `@agent-name` when you want to route a post to one or more agents. Agents without a model can be saved explicitly as inactive drafts. A new chat project requires an agent.
 
@@ -36,7 +36,7 @@ After signing in, use the dashboard's **Start a conversation** guide: add a chat
 
 ### CNPG: add Allgres to your cluster
 
-Build the extension image from the repository root, or use `ghcr.io/allgres/allgres-agent-cnpg-ext:v0.1.0-alpha.2`. The [CNPG guide](docs/deployment/cnpg.md) and [`cnpg/cluster-example.yaml`](cnpg/cluster-example.yaml) show the `Cluster` and `Database` resources. This path requires the CNPG operator, PostgreSQL 18, and Kubernetes ImageVolume support. The previous alpha image passed a live Kubernetes 1.36/containerd 2.3 smoke test; this release passes 362 self-tests on a local PostgreSQL 17 container.
+Build the extension image from the repository root, or use `ghcr.io/allgres/allgres-agent-cnpg-ext:latest`. The [CNPG guide](docs/deployment/cnpg.md) and [`cnpg/cluster-example.yaml`](cnpg/cluster-example.yaml) show the `Cluster` and `Database` resources. This path requires the CNPG operator, PostgreSQL 18, and Kubernetes ImageVolume support. Alpha.2 passed 362 self-tests, worker startup, and the dashboard health check in an isolated Kubernetes 1.36/PostgreSQL 18 cluster.
 
 ### Source code: install into PostgreSQL you manage
 
@@ -51,7 +51,7 @@ Install the matching PostgreSQL server development package, C toolchain, and Ope
 
 ### RPM: package PostgreSQL 18
 
-The [RPM guide](docs/deployment/rpm.md) covers the Fedora 43 package for PostgreSQL 18, including the release download and a build-from-source alternative.
+The [RPM guide](docs/deployment/rpm.md) finds the newest published Fedora 43/PostgreSQL 18 RPM automatically, and also covers building the package from source.
 
 ## What runs inside Postgres
 

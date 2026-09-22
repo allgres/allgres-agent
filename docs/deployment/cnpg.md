@@ -30,13 +30,19 @@ installed first" (confirmed live too). See that file's own header comment
 for the one-line Helm install if you don't already have it running.
 
 A pre-built image is published to GHCR by
-`.github/workflows/publish-image.yml`: `:main` on pushes to main, plus a
-version tag when one is pushed. Wait for the image workflow to finish before
+`.github/workflows/publish-image.yml`: `:main` on pushes to main, plus
+`:latest` and a version tag on release pushes. Wait for the image workflow to finish before
 pulling a new image:
 
 ```bash
-docker pull ghcr.io/allgres/allgres-agent-cnpg-ext:v0.1.0-alpha.2
+docker pull ghcr.io/allgres/allgres-agent-cnpg-ext:latest
 ```
+
+The example omits `Database.spec.extensions[].version`, so a new database
+installs the image's default extension version. `:latest` is resolved when a
+pod is created; it does not upgrade an existing database. Alpha releases have
+no extension upgrade script yet, so use a fresh evaluation database when
+moving between versions.
 
 Use that directly as `cnpg/cluster-example.yaml`'s `image.reference` and
 skip building anything yourself. A personal build pushed to your own GHCR
@@ -53,8 +59,8 @@ instead (a fork, a local change to try before it's tagged):
 # from inside cnpg/) fails immediately with a clear "Cargo.toml not found"
 # error -- confirmed live, this is the one mistake real testing against
 # this Dockerfile actually hit.
-docker build -t ghcr.io/you/allgres-cnpg-ext:v0.1.0-alpha.2 -f cnpg/Dockerfile .
-docker push ghcr.io/you/allgres-cnpg-ext:v0.1.0-alpha.2
+docker build -t ghcr.io/you/allgres-cnpg-ext:latest -f cnpg/Dockerfile .
+docker push ghcr.io/you/allgres-cnpg-ext:latest
 ```
 
 `cnpg/cluster-example.yaml` wires the built image into a real `Cluster`:

@@ -5,11 +5,15 @@ The alpha release provides a native RPM for Fedora 43 and PostgreSQL 18. Downloa
 ## Download and install
 
 ```bash
-curl -fL -O https://github.com/allgres/allgres-agent/releases/download/v0.1.0-alpha.2/allgres-0.1.0-0.alpha.2.fc43.x86_64.rpm
-sudo dnf install ./allgres-0.1.0-0.alpha.2.fc43.x86_64.rpm
+rpm_url="$(curl -fsSL https://api.github.com/repos/allgres/allgres-agent/releases \
+  | python3 -c 'import json,sys; releases=sorted(json.load(sys.stdin),key=lambda r:r.get("published_at") or "",reverse=True); print(next(a["browser_download_url"] for r in releases if not r["draft"] for a in r["assets"] if a["name"].endswith(".rpm")))')"
+curl -fLO "$rpm_url"
+sudo dnf install "./${rpm_url##*/}"
 ```
 
-This package targets Fedora 43 on x86_64. Use the source build below for another architecture or when changing the extension.
+This selects the newest published release that has an RPM asset, including
+public alpha prereleases. The package targets Fedora 43 on x86_64. Use the
+source build below for another architecture or when changing the extension.
 
 ## Build and inspect
 
