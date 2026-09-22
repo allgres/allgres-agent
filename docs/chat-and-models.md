@@ -37,9 +37,9 @@ agent turn and watching it fail. A 2xx response is stored as
 not just `is_enabled`) and its body -- OpenAI, xAI, and Anthropic's
 `/models`/`/v1/models` all return the same `{"data":[{"id":...}]}` shape --
 becomes `available_models`, which is exactly what backs the datalist above.
-An error is stored as `last_probe_status='error'` with the response body
-(or a transport error, e.g. a TLS failure) as `last_probe_error`, and never
-overwrites a previously-fetched model list.
+An error is stored as `last_probe_status='error'` with a short `last_probe_error` (a JSON `error` field when the body is `{"error":"..."}`, otherwise the response body or a transport error, e.g. a TLS failure), and never overwrites a previously-fetched model list.
+
+With `ALLGRES_ENABLE_MOCK=1` the dashboard also serves `GET /mock/models` in the same `{"data":[{"id":...}]}` shape, so Test connection succeeds against the built-in mock the same way a chat turn already did.
 
 A session is no longer a single one-shot exchange. `fn_continue_session`
 adds a follow-up message to an existing session — a new task in the same

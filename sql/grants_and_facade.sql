@@ -601,6 +601,18 @@ BEGIN
           WHERE t.status = 'failed' AND s.goal NOT LIKE 'selftest%'
         ),
         'sessions', (SELECT count(*) FROM allgres_private.sessions WHERE goal NOT LIKE 'selftest%'),
+        -- Dashboard onboarding step 3: a completed General turn, not merely
+        -- a configured model. recent_tasks is a short window and can drop
+        -- the first hello; this count stays true for the life of the install.
+        'general_completed_tasks', (
+          SELECT count(*)
+          FROM allgres_private.tasks t
+          JOIN allgres_private.sessions s USING (session_id)
+          JOIN allgres_private.agents a ON a.agent_id = t.agent_id
+          WHERE a.name = 'general'
+            AND t.status = 'completed'
+            AND s.goal NOT LIKE 'selftest%'
+        ),
         'secret_storage', allgres_private.secret_storage_mode(),
         -- Overview's cluster monitoring (item 44): PostgreSQL version + this
         -- cluster's own session counts come straight from SQL; CPU load and
