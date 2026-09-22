@@ -78,7 +78,10 @@ leaving the conversation for My Agents first; Messenger has no picker,
 since an `@mention` can route to any of several agents. Which agents a regular user can reach at
 all is an explicit allow-list (`allgres_private.user_agent_assignments`,
 managed by an admin from the Users page), not everything minus a
-block-list. See KNOWN_ISSUES.md, item 30, for what this deliberately does
+block-list. Creating a regular user (`fn_create_user` with `role=user`)
+assigns the seeded `general` agent so Chat's first-run path works without
+an extra Users-page click; other seeded agents stay unassigned until an
+admin grants them. See KNOWN_ISSUES.md, item 30, for what this deliberately does
 not change: the pre-existing shared-token `dashboard_rpc` surface (agent
 CRUD, permissions, providers, the SQL sandbox allowlist) is untouched and
 still reachable by anyone holding that one token, same as every version

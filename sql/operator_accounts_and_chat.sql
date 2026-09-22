@@ -434,6 +434,20 @@ BEGIN
   -- Never log p_password/v_hash: audit_log.details is not a secrets store.
   PERFORM allgres_private.audit('users.create', jsonb_build_object('user_id', v_id, 'username', v_username, 'role', p_role));
 
+  -- Chat's first-run path is General. A regular user cannot reach an agent
+  -- without a user_agent_assignments row (require_agent_access); without
+  -- this seed they logged in to "The General agent is not assigned to your
+  -- account". Admins bypass assignment, so they do not get a row. An
+  -- operator can still revoke this from Users. Other seeded agents
+  -- (health_monitor, analyst, the system family) stay unassigned.
+  IF p_role = 'user' THEN
+    INSERT INTO allgres_private.user_agent_assignments (user_id, agent_id)
+    SELECT v_id, a.agent_id
+    FROM allgres_private.agents a
+    WHERE a.name = 'general' AND a.is_active
+    ON CONFLICT DO NOTHING;
+  END IF;
+
   RETURN jsonb_build_object('ok', true, 'user_id', v_id, 'username', v_username, 'role', p_role, 'pg_role', v_pg_role);
 END;
 $fn$;
