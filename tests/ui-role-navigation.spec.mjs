@@ -53,8 +53,8 @@ test('first-run setup keeps unconfigured agents in drafts', async ({ page }) => 
   await page.locator('#nav button', { hasText: 'Agents' }).click();
   await expect(page.getByText('System agents (')).toBeVisible();
   await page.getByText('System agents (').click();
-  await expect(page.locator('#view details').getByText('health_monitor')).toBeVisible();
-  await expect(page.locator('#view > .panel').first().getByText('health_monitor')).toHaveCount(0);
+  await expect(page.locator('#view details').getByRole('cell', { name: 'health_monitor' })).toBeVisible();
+  await expect(page.locator('#view > .panel').first().getByRole('cell', { name: 'health_monitor' })).toHaveCount(0);
   await page.locator('#newAgent').click();
   await page.locator('#aName').fill(draftName);
   await page.locator('#aProvider').selectOption('');
