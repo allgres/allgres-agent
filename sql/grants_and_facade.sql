@@ -540,6 +540,7 @@ AS $fn$
 DECLARE
   v_action text := COALESCE(p_request->>'action', '');
   v_id uuid;
+  v_created jsonb;
   v_user allgres_private.users%ROWTYPE;
   v_scope uuid[];
 BEGIN
@@ -698,7 +699,15 @@ BEGIN
 
     WHEN 'agents.create' THEN
       PERFORM allgres_private.require_admin_if_accounts_exist(p_request->>'session_token');
-      RETURN allgres_public.fn_create_agent(p_request->>'name', p_request->>'system_prompt');
+      v_created := allgres_public.fn_create_agent(p_request->>'name', p_request->>'system_prompt');
+      v_id := (v_created->>'agent_id')::uuid;
+      IF p_request ? 'llm_config' THEN
+        PERFORM allgres_public.fn_set_policy(v_id, NULL, NULL, NULL, p_request->'llm_config');
+      END IF;
+      IF p_request ? 'is_active' THEN
+        PERFORM allgres_public.fn_set_agent_active(v_id, (p_request->>'is_active')::boolean);
+      END IF;
+      RETURN v_created;
 
     WHEN 'agents.update' THEN
       v_id := (p_request->>'agent_id')::uuid;
@@ -785,6 +794,13 @@ BEGIN
         WHERE (NOT (p_request ? 'agent_id') OR cp.agent_id = (p_request->>'agent_id')::uuid)
           AND (NOT (p_request ? 'status') OR cp.status = p_request->>'status')
           AND COALESCE(cp.reason, '') NOT LIKE 'selftest%'
+          AND COALESCE(ta.name, '') NOT LIKE 'selftest%'
+          AND COALESCE(cp.proposed_changes->>'name', '') NOT LIKE '%selftest%'
+          AND NOT EXISTS (
+            SELECT 1 FROM allgres_private.tasks t
+            JOIN allgres_private.sessions s USING (session_id)
+            WHERE t.task_id = cp.task_id AND s.goal LIKE 'selftest%'
+          )
           -- create_agent has no existing target to scope by, so it stays
           -- admin-only in this inbox; a policy_change is visible to whoever
           -- may reach its actual target (COALESCE(target_agent_id, agent_id)).
@@ -953,7 +969,8 @@ BEGIN
                  p.agent_id, a.name AS agent, p.preset_prompt
           FROM allgres_private.projects p
           LEFT JOIN allgres_private.agents a ON a.agent_id = p.agent_id
-          WHERE v_scope IS NULL OR p.agent_id = ANY(v_scope)
+          WHERE p.name NOT LIKE 'selftest%'
+            AND (v_scope IS NULL OR p.agent_id = ANY(v_scope))
         ) pr
       ), '[]'::jsonb));
 

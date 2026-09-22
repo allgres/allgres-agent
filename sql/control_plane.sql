@@ -682,6 +682,7 @@ DECLARE
   v_compactor uuid;
   v_compactor_active boolean;
   v_compactor_config jsonb;
+  v_compactor_llm jsonb;
   v_prev_summary text;
   v_old_logs jsonb;
   v_comp_session uuid;
@@ -694,9 +695,18 @@ BEGIN
   -- regardless of which agent owns the session. Defaults (60/10) match
   -- this function's behavior before agent_config existed -- an admin who
   -- never touches these settings sees no change at all.
-  SELECT agent_id, is_active, agent_config INTO v_compactor, v_compactor_active, v_compactor_config
-  FROM allgres_private.agents WHERE name = 'session_compactor';
+  SELECT a.agent_id, a.is_active, a.agent_config, p.llm_config
+  INTO v_compactor, v_compactor_active, v_compactor_config, v_compactor_llm
+  FROM allgres_private.agents a
+  JOIN allgres_private.policies p USING (agent_id)
+  WHERE a.name = 'session_compactor';
   IF v_compactor IS NULL OR NOT v_compactor_active THEN
+    RETURN;
+  END IF;
+  -- A fresh install has no model on the seeded compactor. Do not enqueue a
+  -- task that cannot run merely because a session (or selftest) grew long.
+  IF NULLIF(v_compactor_llm->>'provider', '') IS NULL
+     OR NULLIF(v_compactor_llm->>'model', '') IS NULL THEN
     RETURN;
   END IF;
   c_threshold := COALESCE((v_compactor_config->>'compaction_threshold')::int, 60);

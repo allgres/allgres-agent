@@ -86,18 +86,18 @@ before this — login adds a second, narrower identity layer for chat/
 messenger/my-model specifically, not a retrofit of the first one (that
 remains KNOWN_ISSUES.md, item 10).
 
-## Chat: General, Messenger, and Project modes
+## Chat: General, Team messages, Sessions, and Projects
 
-The Chat page is one page with three mode buttons, not three separate nav
-entries: **General** (a plain, continuing 1:1 conversation — unchanged from
-before), **Messenger** (the Slack-style shared channel — unchanged, now
-also delivering to every agent a post `@mentions`, in text order, when more
-than one is addressed), and **Project** — a project (Settings/Projects,
-admin-managed) may be bound to one agent with a `preset_prompt` appended
+The Chat page has **General** (a continuing 1:1 conversation with the seeded
+`general` agent), **Team messages** (the shared channel; plain posts are
+stored, while `@agent-name` routes work to an agent), and **Sessions**
+(history). **Projects → Conversation** hosts project chat. A project
+(admin-managed) must be bound to one agent when created in the dashboard;
+it may have a `preset_prompt` appended
 after that agent's own system prompt (`fn_next_step`), giving it a focused,
 reusable context (e.g. "only ever answer about the Seoul region") without
 touching the agent's own policy. Project mode has its own continuing
 session per (user, project) pair (`user_project_chat_sessions`,
 `fn_project_chat_send`/`fn_project_chat_history`) — deliberately separate
-from that same agent's General-mode conversation, so a project's preset
+from that same agent's direct conversation, so a project's preset
 context never leaks into a plain chat with the same agent or vice versa.

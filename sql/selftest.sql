@@ -120,7 +120,18 @@ DECLARE
   v_live_rpc_actions text[];
   v_missing_rpc_actions text[];
   v_extra_rpc_actions text[];
+  v_result jsonb;
 BEGIN
+  -- Run fixtures in a subtransaction. Catching the sentinel after the
+  -- result is computed rolls back every fixture, including append-only
+  -- execution logs, without weakening their mutation trigger.
+  BEGIN
+  -- dashboard_rpc stamps this transaction as a web request before calling
+  -- us. The first case exercises a direct SQL call, so reset that context
+  -- only inside this disposable subtransaction. Its parent context returns
+  -- automatically when the sentinel rolls the fixtures back.
+  PERFORM set_config('allgres.audit_operator', '__sql__', true);
+  PERFORM set_config('allgres.audit_user_id', '__sql__', true);
   -- Clear out any leftover fixtures from an interrupted prior run before
   -- creating new ones, so a crash mid-selftest can't leave stale rows
   -- behind indefinitely.
@@ -4210,6 +4221,15 @@ BEGIN
       VALUES (v_tid, v_i, 'assistant', to_jsonb('selftest turn ' || v_i::text), v_comp_base + (v_i * interval '1 second'));
     END LOOP;
     PERFORM allgres_public.fn_next_step(v_tid);
+    ok := NOT EXISTS (
+      SELECT 1 FROM allgres_private.sessions
+      WHERE goal = 'session_compact:' || v_sid::text
+    );
+    v := v || jsonb_build_array(jsonb_build_object('name', 'compaction_waits_for_a_configured_model', 'ok', ok));
+    UPDATE allgres_private.policies
+    SET llm_config = jsonb_build_object('provider', 'allgres_mock', 'model', 'mock')
+    WHERE agent_id = (SELECT agent_id FROM allgres_private.agents WHERE name = 'session_compactor');
+    PERFORM allgres_public.fn_next_step(v_tid);
 
     SELECT s.session_id INTO v_comp_sid FROM allgres_private.sessions s
     WHERE s.goal = 'session_compact:' || v_sid::text;
@@ -5222,7 +5242,7 @@ BEGIN
   -- Leave the agent as we found it.
   UPDATE allgres_private.policies SET system_prompt = v_saved_prompt WHERE agent_id = v_agent;
 
-  RETURN jsonb_build_object(
+  v_result := jsonb_build_object(
     'passed', (SELECT count(*) FROM jsonb_array_elements(v) e WHERE (e->>'ok')::boolean IS TRUE),
     -- A missing/JSON-null/non-boolean result is not a pass. Treating SQL
     -- NULL as neither passed nor failed made the old summary capable of
@@ -5230,6 +5250,10 @@ BEGIN
     'failed', (SELECT count(*) FROM jsonb_array_elements(v) e WHERE (e->>'ok')::boolean IS DISTINCT FROM TRUE),
     'cases', v
   );
+  RAISE EXCEPTION 'selftest finished' USING ERRCODE = 'Z0001';
+  EXCEPTION WHEN SQLSTATE 'Z0001' THEN
+    RETURN v_result;
+  END;
 END;
 $fn$;
 

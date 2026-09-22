@@ -300,10 +300,10 @@ BEGIN
   -- see that trigger's comment. Deleting sql_calls/tasks/sessions instead
   -- and leaving orphaned execution_logs behind would either violate the
   -- tasks/sessions FK (nothing here cascades) or leave logs with no task to
-  -- belong to. So selftest fixtures are never deleted; instead this only
-  -- terminates anything left non-terminal by an interrupted run, and the
-  -- operator-facing views/listings filter out goal LIKE 'selftest%' (see
-  -- their own comments) so they never actually show up in the dashboard.
+  -- belong to. Older selftest runs left fixtures behind. Current
+  -- fn_selftest uses a rollback-only subtransaction, so it leaves no new
+  -- rows. Legacy normalization in this function is also rolled back by
+  -- fn_selftest; operator-facing listings filter those older rows.
   -- Some Messenger tests intentionally use a natural-language user message
   -- as the session goal, so the goal does not begin with `selftest` even
   -- though the target is one of the disposable selftest agents. Normalize
