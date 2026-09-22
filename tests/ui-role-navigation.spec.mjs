@@ -49,6 +49,7 @@ test('first-run setup keeps unconfigured agents in drafts', async ({ page }) => 
   const draftName=`ui_draft_${Date.now()}`;
   await login(page, 'ui_admin', 'ui-admin-password');
   await expect(page.getByText('Start a conversation')).toBeVisible();
+  await expect(page.getByRole('button', { name: '3. Say hello to General' })).toBeVisible();
   await page.locator('#nav button', { hasText: 'Agents' }).click();
   await expect(page.getByText('System agents (')).toBeVisible();
   await page.locator('#newAgent').click();
