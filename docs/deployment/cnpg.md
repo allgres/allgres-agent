@@ -35,7 +35,7 @@ version tag when one is pushed. Wait for the image workflow to finish before
 pulling a new image:
 
 ```bash
-docker pull ghcr.io/allgres/allgres-agent-cnpg-ext:v0.1.0-alpha.1
+docker pull ghcr.io/allgres/allgres-agent-cnpg-ext:v0.1.0-alpha.2
 ```
 
 Use that directly as `cnpg/cluster-example.yaml`'s `image.reference` and
@@ -53,8 +53,8 @@ instead (a fork, a local change to try before it's tagged):
 # from inside cnpg/) fails immediately with a clear "Cargo.toml not found"
 # error -- confirmed live, this is the one mistake real testing against
 # this Dockerfile actually hit.
-docker build -t ghcr.io/you/allgres-cnpg-ext:v0.1.0-alpha.1 -f cnpg/Dockerfile .
-docker push ghcr.io/you/allgres-cnpg-ext:v0.1.0-alpha.1
+docker build -t ghcr.io/you/allgres-cnpg-ext:v0.1.0-alpha.2 -f cnpg/Dockerfile .
+docker push ghcr.io/you/allgres-cnpg-ext:v0.1.0-alpha.2
 ```
 
 `cnpg/cluster-example.yaml` wires the built image into a real `Cluster`:

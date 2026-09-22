@@ -6,7 +6,7 @@
 
 Allgres turns PostgreSQL into an agent control plane. A PL/pgSQL state machine, a Rust/pgrx runtime worker, outbound HTTP, and a browser dashboard ship as one extension. Create an agent, connect a model, and inspect its work with SQL you already know.
 
-> **Public alpha · `0.1.0-alpha.1`** — built for evaluation. Read the [security model](docs/security.md) and [known limitations](KNOWN_ISSUES.md) before using real data or exposing the dashboard. Report vulnerabilities through [private disclosure](SECURITY.md).
+> **Public alpha · `0.1.0-alpha.2`** — built for evaluation. Read the [security model](docs/security.md) and [known limitations](KNOWN_ISSUES.md) before using real data or exposing the dashboard. Report vulnerabilities through [private disclosure](SECURITY.md).
 
 ## Quick start
 
@@ -36,7 +36,7 @@ After signing in, use the dashboard's **Start a conversation** guide: add a chat
 
 ### CNPG: add Allgres to your cluster
 
-Build the extension image from the repository root, or use `ghcr.io/allgres/allgres-agent-cnpg-ext:v0.1.0-alpha.1`. The [CNPG guide](docs/deployment/cnpg.md) and [`cnpg/cluster-example.yaml`](cnpg/cluster-example.yaml) show the `Cluster` and `Database` resources. This path requires the CNPG operator, PostgreSQL 18, and Kubernetes ImageVolume support. A live Kubernetes 1.36/containerd 2.3 cluster passed extension creation, 361 self-tests, worker startup, and the dashboard health check.
+Build the extension image from the repository root, or use `ghcr.io/allgres/allgres-agent-cnpg-ext:v0.1.0-alpha.2`. The [CNPG guide](docs/deployment/cnpg.md) and [`cnpg/cluster-example.yaml`](cnpg/cluster-example.yaml) show the `Cluster` and `Database` resources. This path requires the CNPG operator, PostgreSQL 18, and Kubernetes ImageVolume support. The previous alpha image passed a live Kubernetes 1.36/containerd 2.3 smoke test; this release passes 362 self-tests on a local PostgreSQL 17 container.
 
 ### Source code: install into PostgreSQL you manage
 
