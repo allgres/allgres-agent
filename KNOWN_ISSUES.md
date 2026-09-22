@@ -1,6 +1,6 @@
 # Known limitations
 
-Allgres `0.1.0-alpha.2` is a public alpha. Use it for evaluation and
+Allgres `0.1.0-alpha.3` is a public alpha. Use it for evaluation and
 development, not as the only copy of production data.
 
 ## Upgrade compatibility

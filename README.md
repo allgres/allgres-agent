@@ -6,7 +6,7 @@
 
 Allgres turns PostgreSQL into an agent control plane. A PL/pgSQL state machine, a Rust/pgrx runtime worker, outbound HTTP, and a browser dashboard ship as one extension. Create an agent, connect a model, and inspect its work with SQL you already know.
 
-> **Public alpha · `0.1.0-alpha.2`** — built for evaluation. Read the [security model](docs/security.md) and [known limitations](KNOWN_ISSUES.md) before using real data or exposing the dashboard. Report vulnerabilities through [private disclosure](SECURITY.md).
+> **Public alpha · `0.1.0-alpha.3`** — built for evaluation. Read the [security model](docs/security.md) and [known limitations](KNOWN_ISSUES.md) before using real data or exposing the dashboard. Report vulnerabilities through [private disclosure](SECURITY.md).
 
 ## Quick start
 
@@ -26,7 +26,7 @@ docker compose up -d --build
 ./scripts/bootstrap.sh
 ```
 
-Open **http://127.0.0.1:8088**. The bootstrap script waits for health, creates a first admin, and runs an agent task against the built-in mock provider. For the newest published image, pull `ghcr.io/allgres/allgres-agent:latest`; `:main` follows development commits, while `:v0.1.0-alpha.2` pins this release. See the [Docker guide](docs/deployment/docker.md) for `docker run`, persistence, and the production overlay.
+Open **http://127.0.0.1:8088**. The bootstrap script waits for health, creates a first admin, and runs an agent task against the built-in mock provider. For the newest published image, pull `ghcr.io/allgres/allgres-agent:latest`; `:main` follows development commits, while `:v0.1.0-alpha.3` pins this release. See the [Docker guide](docs/deployment/docker.md) for `docker run`, persistence, and the production overlay.
 
 After signing in, use the dashboard's **Start a conversation** guide: add a chat provider and run **Test connection** in Settings, choose a provider and model for the **general** agent, then open **General** and send a message. General is a direct conversation; **Team messages** uses `@agent-name` when you want to route a post to one or more agents. Agents without a model can be saved explicitly as inactive drafts. A new chat project requires an agent.
 
@@ -36,7 +36,7 @@ After signing in, use the dashboard's **Start a conversation** guide: add a chat
 
 ### CNPG: add Allgres to your cluster
 
-Build the extension image from the repository root, or use `ghcr.io/allgres/allgres-agent-cnpg-ext:latest`. The [CNPG guide](docs/deployment/cnpg.md) and [`cnpg/cluster-example.yaml`](cnpg/cluster-example.yaml) show the `Cluster` and `Database` resources. This path requires the CNPG operator, PostgreSQL 18, and Kubernetes ImageVolume support. Alpha.2 passed 362 self-tests, worker startup, and the dashboard health check in an isolated Kubernetes 1.36/PostgreSQL 18 cluster.
+Build the extension image from the repository root, or use `ghcr.io/allgres/allgres-agent-cnpg-ext:latest`. The [CNPG guide](docs/deployment/cnpg.md) and [`cnpg/cluster-example.yaml`](cnpg/cluster-example.yaml) show the `Cluster` and `Database` resources. This path requires the CNPG operator, PostgreSQL 18, and Kubernetes ImageVolume support. Alpha.2 passed 362 self-tests, worker startup, and the dashboard health check in an isolated Kubernetes 1.36/PostgreSQL 18 cluster; this release adds first-run Test connection, General assignment, and the health_monitor Agents-list fold.
 
 ### Source code: install into PostgreSQL you manage
 

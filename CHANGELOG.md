@@ -4,6 +4,8 @@ All notable changes will be documented here.
 
 ## Unreleased
 
+## 0.1.0-alpha.3
+
 - Built-in mock now answers `GET /mock/models` (and `/mock/v1/models`) so Settings → Test connection works against the same endpoint bootstrap uses for a first chat.
 - Dashboard onboarding marks step 3 complete after General has finished a turn, not only after a model is saved.
 - Provider probe errors prefer a JSON `error` field over the raw response body, so a 404 is `not_found` rather than `{"ok":false,"error":"not_found"}`.
