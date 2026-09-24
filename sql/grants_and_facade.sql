@@ -663,6 +663,13 @@ BEGIN
             'max_turn_seconds', p.max_turn_seconds,
             'max_delegation_depth', p.max_delegation_depth,
             'max_session_tasks', p.max_session_tasks,
+            'execution_rules', COALESCE((
+              SELECT jsonb_agg(jsonb_build_object(
+                'action', r.action, 'resource', r.resource, 'decision', r.decision,
+                'generation', r.generation
+              ) ORDER BY r.action, r.resource)
+              FROM allgres_private.execution_rules r WHERE r.agent_id = a.agent_id
+            ), '[]'::jsonb),
             'permissions', COALESCE((
               SELECT jsonb_agg(jsonb_build_object('type', x.resource_type, 'ref', x.resource_ref)
                      ORDER BY x.resource_type, x.resource_ref)
@@ -675,6 +682,11 @@ BEGIN
         LEFT JOIN allgres_private.agents pa ON pa.agent_id = a.parent_agent_id
         WHERE a.name NOT LIKE 'selftest%'
       ), '[]'::jsonb));
+
+    WHEN 'agents.set_execution_rule' THEN
+      PERFORM allgres_private.require_admin_if_accounts_exist(p_request->>'session_token');
+      RETURN allgres_public.fn_set_execution_rule((p_request->>'agent_id')::uuid,
+        p_request->>'rule_action', p_request->>'resource', p_request->>'decision');
 
     WHEN 'agents.set_autonomy' THEN
       -- Relaxed from a bare require_admin: that alone made this the one
@@ -1953,7 +1965,7 @@ BEGIN
         SELECT jsonb_agg(to_jsonb(q) ORDER BY q.created_at)
         FROM (
           SELECT h.approval_id, h.task_id, t.session_id, a.name AS agent,
-                 s.goal, h.payload->>'reason' AS reason,
+                 s.goal, h.payload->>'reason' AS reason, h.payload,
                  h.created_at, h.expires_at
           FROM allgres_private.human_approvals h
           JOIN allgres_private.tasks t USING (task_id)

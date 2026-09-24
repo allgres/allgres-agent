@@ -560,3 +560,5 @@ SELECT pg_catalog.pg_extension_config_dump('allgres_private.model_experiments', 
 -- pg_dump that skipped it would silently come back with every cost_usd
 -- unpriced after restore.
 SELECT pg_catalog.pg_extension_config_dump('allgres_private.llm_model_prices', '');
+
+SELECT pg_catalog.pg_extension_config_dump('allgres_private.execution_rules', '');

@@ -33,6 +33,10 @@ BEGIN
     RAISE EXCEPTION 'approval not pending' USING ERRCODE = 'P0001';
   END IF;
 
+  IF v.expires_at IS NOT NULL AND v.expires_at <= clock_timestamp() THEN
+    RAISE EXCEPTION 'approval expired';
+  END IF;
+
   UPDATE allgres_private.human_approvals
   SET status = CASE WHEN p_accept THEN 'approved' ELSE 'rejected' END,
       reply_text = p_reply,
@@ -53,7 +57,8 @@ BEGIN
 
   IF p_accept THEN
     UPDATE allgres_private.tasks
-    SET status = 'queued', step_count = step_count + 1, updated_at = now()
+    SET status = CASE WHEN v.payload ? 'queue' THEN 'running' ELSE 'queued' END,
+        step_count = step_count + 1, updated_at = now()
     WHERE task_id = t.task_id;
   ELSE
     UPDATE allgres_private.tasks
