@@ -108,6 +108,8 @@ jobs:
           sudo -u postgres psql -p "$PGPORT" -d postgres -tAc \
             "DELETE FROM allgres_private.web_sessions WHERE user_id IN (SELECT user_id FROM allgres_private.users WHERE username = 'ci_selftest_admin'); DELETE FROM allgres_private.users WHERE username = 'ci_selftest_admin';" >/dev/null
           sudo -u postgres psql -p "$PGPORT" -d postgres -v ON_ERROR_STOP=1 -f tests/smoke.sql
+          sudo -u postgres psql -p "$PGPORT" -d postgres -v ON_ERROR_STOP=1 -f tests/execution_safety.sql
+          sudo -u postgres psql -p "$PGPORT" -d postgres -v ON_ERROR_STOP=1 -f tests/execution_safety_worker.sql
           sudo -u postgres psql -p "$PGPORT" -d postgres -v ON_ERROR_STOP=1 -f tests/e2e_mock.sql
           sudo -u postgres psql -p "$PGPORT" -d postgres -v ON_ERROR_STOP=1 -f tests/capability_governance.sql
 

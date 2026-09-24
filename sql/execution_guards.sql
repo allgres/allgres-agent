@@ -75,6 +75,110 @@ BEGIN
 END;
 $fn$;
 
+-- The declared dependency set is the approval scope. Undeclared/dynamic
+-- calls still pass through the runtime guard, but cannot borrow this approval.
+CREATE OR REPLACE FUNCTION allgres_private.local_execution_scope(p_queue text, p_request jsonb)
+RETURNS jsonb LANGUAGE sql STABLE SET search_path = allgres_private, pg_temp AS $fn$
+  SELECT jsonb_build_object(
+    'procedure', (SELECT to_jsonb(p) FROM procedures p
+      WHERE p_queue = 'procedure_calls' AND p.procedure_id = (p_request->>'procedure_id')::uuid),
+    'functions', COALESCE((SELECT jsonb_agg(to_jsonb(f) ORDER BY f.function_id)
+      FROM functions f WHERE
+        (p_queue = 'function_calls' AND f.function_id = (p_request->>'function_id')::uuid)
+        OR (p_queue = 'procedure_calls' AND EXISTS (
+          SELECT 1 FROM procedure_function_bindings b
+          WHERE b.procedure_id = (p_request->>'procedure_id')::uuid AND b.function_id = f.function_id))), '[]'::jsonb));
+$fn$;
+
+-- A custom GUC is writable by agent code, so it is not an approval token.
+-- Only the worker can establish this backend/transaction-local context.
+CREATE TABLE allgres_private.local_execution_context (
+  backend_pid int PRIMARY KEY,
+  transaction_id xid8 NOT NULL,
+  queue text NOT NULL,
+  call_id uuid NOT NULL,
+  task_id uuid NOT NULL REFERENCES allgres_private.tasks(task_id) ON DELETE CASCADE,
+  agent_id uuid NOT NULL REFERENCES allgres_private.agents(agent_id) ON DELETE CASCADE
+);
+
+CREATE OR REPLACE FUNCTION allgres_private.begin_local_execution(p_queue text, p_call uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = allgres_private, pg_temp AS $fn$
+DECLARE q jsonb; t tasks%ROWTYPE;
+BEGIN
+  IF p_queue NOT IN ('function_calls', 'procedure_calls') THEN RAISE EXCEPTION 'invalid local queue'; END IF;
+  EXECUTE format('SELECT to_jsonb(c) FROM allgres_private.%I c WHERE call_id = $1', p_queue) INTO q USING p_call;
+  SELECT * INTO t FROM tasks WHERE task_id = (q->>'task_id')::uuid;
+  IF q IS NULL OR q->>'status' <> 'in_flight' OR t.status <> 'running' THEN
+    RAISE EXCEPTION 'local call is no longer executable';
+  END IF;
+  INSERT INTO local_execution_context VALUES(pg_backend_pid(), pg_current_xact_id(), p_queue, p_call, t.task_id, t.agent_id)
+  ON CONFLICT (backend_pid) DO UPDATE SET transaction_id = EXCLUDED.transaction_id,
+    queue = EXCLUDED.queue, call_id = EXCLUDED.call_id, task_id = EXCLUDED.task_id, agent_id = EXCLUDED.agent_id;
+END;
+$fn$;
+
+-- Invoked outside the author's body, including on nested and dynamic calls.
+-- Never accept an agent-supplied identity or approval ID.
+CREATE OR REPLACE FUNCTION allgres_private.assert_local_execution(p_ident text)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = allgres_private, pg_temp AS $fn$
+DECLARE
+  v_role text := COALESCE(NULLIF(current_setting('role'), 'none'), session_user::text);
+  a agents%ROWTYPE; ctx local_execution_context%ROWTYPE; ap human_approvals%ROWTYPE;
+  f functions%ROWTYPE; p procedures%ROWTYPE;
+  v_action text; v_name text; v_approve boolean; v_deny boolean;
+  q jsonb; v_scope jsonb; v_rules jsonb;
+BEGIN
+  SELECT * INTO ctx FROM local_execution_context
+    WHERE backend_pid = pg_backend_pid() AND transaction_id = pg_current_xact_id_if_assigned();
+  SELECT * INTO a FROM agents WHERE pg_role = v_role
+    OR (v_role = 'sandbox' AND pg_role IS NULL AND agent_id = ctx.agent_id);
+  IF a.agent_id IS NULL THEN
+    IF pg_has_role(v_role, 'operator', 'MEMBER') THEN RETURN; END IF;
+    RAISE EXCEPTION 'local execution requires an agent identity';
+  END IF;
+  IF NOT a.is_active THEN RAISE EXCEPTION 'agent inactive'; END IF;
+  SELECT * INTO f FROM functions WHERE sql_ident = p_ident;
+  IF FOUND THEN
+    v_action := 'call_function'; v_name := f.name;
+    IF NOT f.is_active OR f.build_status <> 'built' THEN RAISE EXCEPTION 'function unavailable'; END IF;
+  ELSE
+    SELECT * INTO p FROM procedures WHERE sql_ident = p_ident;
+    IF NOT FOUND OR NOT p.is_active OR p.build_status <> 'built' THEN RAISE EXCEPTION 'procedure unavailable'; END IF;
+    v_action := 'run_procedure'; v_name := p.name;
+  END IF;
+  SELECT COALESCE(bool_or(decision = 'deny'), false), COALESCE(bool_or(decision = 'approve'), false)
+    INTO v_deny, v_approve FROM execution_rules
+    WHERE agent_id = a.agent_id AND action = v_action AND resource IN ('*', v_name);
+  IF v_deny THEN RAISE EXCEPTION 'execution denied: %', v_name; END IF;
+  IF ctx.agent_id = a.agent_id THEN
+    SELECT * INTO ap FROM human_approvals WHERE task_id = ctx.task_id
+      AND payload->>'queue' = ctx.queue AND payload->>'call_id' = ctx.call_id::text
+      ORDER BY created_at DESC, approval_id DESC LIMIT 1;
+  END IF;
+  -- Recheck any root approval even if this particular routine has no rule.
+  IF NOT v_approve AND ap.approval_id IS NULL THEN RETURN; END IF;
+  IF ap.status IS DISTINCT FROM 'approved' OR ap.expires_at <= clock_timestamp() THEN
+    RAISE EXCEPTION 'execution requires approval: %', v_name;
+  END IF;
+  EXECUTE format('SELECT to_jsonb(c) FROM allgres_private.%I c WHERE call_id = $1', ctx.queue) INTO q USING ctx.call_id;
+  v_scope := local_execution_scope(ctx.queue, q);
+  SELECT COALESCE(jsonb_agg(to_jsonb(r) ORDER BY r.action, r.resource), '[]'::jsonb) INTO v_rules
+    FROM execution_rules r WHERE r.agent_id = a.agent_id;
+  IF q->>'status' <> 'in_flight'
+     OR NOT EXISTS (SELECT 1 FROM tasks WHERE task_id = ctx.task_id AND status = 'running')
+     OR ap.payload->'snapshot'->'request' IS DISTINCT FROM
+       (q - ARRAY['status','created_at','updated_at','response_status','response_body','error','result'])
+     OR ap.payload->'snapshot'->'local_scope' IS DISTINCT FROM v_scope
+     OR ap.payload->'snapshot'->'local_rules' IS DISTINCT FROM v_rules
+     OR (ap.payload->'snapshot'->>'policy_generation')::int IS DISTINCT FROM
+       (SELECT generation FROM policies WHERE agent_id = a.agent_id)
+     OR NOT COALESCE(v_scope->'procedure'->>'sql_ident' = p_ident OR EXISTS (
+       SELECT 1 FROM jsonb_array_elements(v_scope->'functions') d WHERE d->>'sql_ident' = p_ident), false) THEN
+    RAISE EXCEPTION 'execution approval scope changed or does not include: %', v_name;
+  END IF;
+END;
+$fn$;
+
 CREATE OR REPLACE FUNCTION allgres_private.guard_queued_call(p_queue text, p_call_id uuid)
 RETURNS boolean LANGUAGE plpgsql SET search_path = allgres_private, pg_temp AS $fn$
 DECLARE
@@ -93,6 +197,8 @@ DECLARE
   v_snapshot jsonb;
   v_requires boolean;
   v_approval allgres_private.human_approvals%ROWTYPE;
+  v_local_scope jsonb;
+  v_local_rules jsonb;
 BEGIN
   IF p_queue NOT IN ('outbound_calls', 'sql_calls', 'function_calls', 'procedure_calls') THEN
     RAISE EXCEPTION 'unsupported execution queue';
@@ -164,10 +270,17 @@ BEGIN
     END IF;
   END IF;
 
-  SELECT COALESCE(jsonb_agg(to_jsonb(r) ORDER BY r.resource), '[]'::jsonb),
+  v_local_scope := allgres_private.local_execution_scope(p_queue, q);
+  SELECT COALESCE(jsonb_agg(to_jsonb(r) ORDER BY r.action, r.resource), '[]'::jsonb)
+    INTO v_local_rules FROM allgres_private.execution_rules r WHERE r.agent_id = t.agent_id;
+  SELECT COALESCE(jsonb_agg(to_jsonb(r) ORDER BY r.action, r.resource), '[]'::jsonb),
          COALESCE(bool_or(r.decision = 'approve'), false)
     INTO v_rules, v_requires FROM allgres_private.execution_rules r
-    WHERE r.agent_id = t.agent_id AND r.action = v_action AND r.resource IN ('*', v_resource);
+    WHERE r.agent_id = t.agent_id AND (
+      (r.action = v_action AND r.resource IN ('*', v_resource))
+      OR (p_queue = 'procedure_calls' AND r.action = 'call_function' AND EXISTS (
+        SELECT 1 FROM jsonb_array_elements(v_local_scope->'functions') d
+        WHERE r.resource IN ('*', d->>'name'))));
   IF EXISTS (SELECT 1 FROM jsonb_array_elements(v_rules) r WHERE r->>'decision' = 'deny') THEN
     v_reason := 'execution_denied';
   END IF;
@@ -187,6 +300,7 @@ BEGIN
     'request', q - ARRAY['status','created_at','updated_at','response_status','response_body','error','result'],
     'policy_generation', v_generation, 'rules', v_rules,
     'function_generation', f.generation, 'procedure_generation', pr.generation,
+    'local_scope', v_local_scope, 'local_rules', v_local_rules,
     'connection', to_jsonb(conn), 'provider', to_jsonb(provider));
   SELECT * INTO v_approval FROM allgres_private.human_approvals
     WHERE task_id = t.task_id AND payload->>'queue' = p_queue AND payload->>'call_id' = p_call_id::text

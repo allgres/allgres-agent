@@ -2004,7 +2004,7 @@ BEGIN
   v := v || jsonb_build_array(jsonb_build_object('name', 'http_request_mutating_call_gets_idempotency_key', 'ok', ok));
 
   -- Identical new actions are distinct operations. Only retry_of_call_id
-  -- reuses a previous key (covered by execution_safety.sql).
+  -- reuses a previous key.
   UPDATE allgres_private.tasks SET status = 'running' WHERE task_id = v_tid;
   comp := allgres_public.fn_submit_result(v_tid, jsonb_build_object(
     'type', 'llm_response', 'content', '{}', 'parsed', jsonb_build_object(
@@ -3858,7 +3858,8 @@ BEGIN
       AND v_approval IS NOT NULL
       AND (r->>'ambiguous_outbound_call_id')::uuid = v_call
       AND r->>'reason' LIKE '%POST%'
-      AND NOT EXISTS (SELECT 1 FROM allgres_private.execution_logs WHERE task_id = v_watchdog_tid AND role = 'error');
+      AND EXISTS (SELECT 1 FROM allgres_private.execution_logs WHERE task_id = v_watchdog_tid
+        AND role = 'error' AND content->>'reason' = 'outbound_result_unknown');
     v := v || jsonb_build_array(jsonb_build_object('name', 'watchdog_lost_mutating_call_pauses_for_human_instead_of_retrying', 'ok', ok));
 
     -- Approving it resumes the task through the exact same path any other

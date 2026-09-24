@@ -177,6 +177,26 @@ Approving resumes that same queued request; it does not give the model a new
 turn to change it. A changed snapshot or an expired approval requires a new
 approval.
 
+For PL/pgSQL procedures, this snapshot also includes every bound function's
+definition and generation, and the binding set. Function rules apply to those
+dependencies at claim time: a denied dependency blocks the procedure, and an
+approval requirement pauses the whole procedure with its exact arguments.
+Generated functions and procedures also check rules before entering their
+body, including nested or dynamic calls. An approval covers only its root
+routine and declared bound functions; an undeclared call cannot borrow it.
+The worker establishes the context in a protected backend/transaction-scoped
+table, not an agent-writable session setting. Changed definitions, bindings,
+rules, or expired approvals are rejected again at runtime.
+While a local routine runs, PostgreSQL's security context also prohibits
+role/session-authorization changes, including dynamically constructed SQL
+and `set_config('role', ...)`, so nested code cannot change its identity.
+
+Existing installations must rebuild previously generated PL/pgSQL functions
+and procedures when installing this runtime change; old PostgreSQL routine
+objects do not acquire the entry guard merely by replacing the extension
+library. Mark their build status pending and let the build worker recreate
+them before resuming agent work.
+
 Every queue claim also rechecks the agent's active status, current grants,
 and referenced connection or provider configuration. Revoking a grant or
 disabling a dependency therefore blocks queued work that has not yet been

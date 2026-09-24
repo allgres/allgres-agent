@@ -398,6 +398,9 @@ GRANT EXECUTE ON FUNCTION allgres_private.fn_llm_complete(jsonb, jsonb) TO allgr
 -- several such gaps found only by testing under the actual role, not
 -- superuser or another SECURITY DEFINER function.
 GRANT EXECUTE ON FUNCTION allgres_private.current_agent_id() TO sandbox;
+GRANT EXECUTE ON FUNCTION allgres_private.assert_local_execution(text) TO sandbox;
+GRANT EXECUTE ON FUNCTION allgres_private.begin_local_execution(text, uuid) TO worker;
+REVOKE ALL ON allgres_private.local_execution_context FROM operator;
 
 -- SECURITY DEFINER changes what agent_may_read's own body runs as once
 -- it's allowed to start -- it does not waive the EXECUTE check needed to
