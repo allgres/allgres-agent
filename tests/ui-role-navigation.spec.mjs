@@ -49,8 +49,12 @@ test('first-run setup keeps unconfigured agents in drafts', async ({ page }) => 
   const draftName=`ui_draft_${Date.now()}`;
   await login(page, 'ui_admin', 'ui-admin-password');
   await expect(page.getByText('Start a conversation')).toBeVisible();
+  await expect(page.getByRole('button', { name: '3. Say hello to General' })).toBeVisible();
   await page.locator('#nav button', { hasText: 'Agents' }).click();
   await expect(page.getByText('System agents (')).toBeVisible();
+  await page.getByText('System agents (').click();
+  await expect(page.locator('#view details').getByRole('cell', { name: 'health_monitor' })).toBeVisible();
+  await expect(page.locator('#view > .panel').first().getByRole('cell', { name: 'health_monitor' })).toHaveCount(0);
   await page.locator('#newAgent').click();
   await page.locator('#aName').fill(draftName);
   await page.locator('#aProvider').selectOption('');
@@ -72,6 +76,9 @@ test('regular user sees only scoped chat and personal settings', async ({ page }
     await button.click();
     await expect(button).toHaveClass(/active/);
   }
+  await page.locator('#nav button', { hasText: 'General' }).click();
+  await expect(page.locator('#generalChatThread')).toBeVisible();
+  await expect(page.getByText('not assigned to your account')).toHaveCount(0);
   for (const forbidden of ['Dashboard','SQL','Agents','Memories','Audit'])
     await expect(page.locator('#nav').getByRole('button',{name:forbidden,exact:true})).toHaveCount(0);
 });

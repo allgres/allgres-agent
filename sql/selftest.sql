@@ -2963,6 +2963,30 @@ BEGIN
     comp := allgres_public.fn_login('selftest_user', 'selftest-user-pw1');
     v_user_tok := comp->>'session_token';
 
+    -- Regular users get general assigned at create so Chat works on first
+    -- login. health_monitor and other seeded agents stay unassigned; admins
+    -- get no assignment rows (they bypass the table).
+    ok := (allgres_private.require_agent_access(
+             v_user_tok,
+             (SELECT agent_id FROM allgres_private.agents WHERE name = 'general')
+           )).user_id IS NOT NULL;
+    BEGIN
+      PERFORM allgres_private.require_agent_access(
+        v_user_tok,
+        (SELECT agent_id FROM allgres_private.agents WHERE name = 'health_monitor')
+      );
+      ok := false;
+    EXCEPTION WHEN others THEN
+      ok := ok AND SQLERRM LIKE '%not assigned%';
+    END;
+    ok := ok AND NOT EXISTS (
+      SELECT 1
+      FROM allgres_private.user_agent_assignments uaa
+      JOIN allgres_private.users u USING (user_id)
+      WHERE u.username = 'selftest_admin'
+    );
+    v := v || jsonb_build_array(jsonb_build_object('name', 'fn_create_user_assigns_general_to_regular_users', 'ok', ok));
+
     -- An admin reaches any active agent with no assignment row at all; a
     -- regular user is rejected from the same agent until explicitly
     -- assigned, then allowed.

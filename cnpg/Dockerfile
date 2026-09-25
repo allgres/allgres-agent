@@ -36,10 +36,18 @@ USER 0
 # pulls it in transitively via libpq-dev on Debian, but that chain is not
 # something to rely on silently (confirmed live: a source install on a
 # machine without it hit exactly this, see KNOWN_ISSUES.md item 52).
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates curl build-essential clang libclang-dev pkg-config \
-    libssl-dev git "postgresql-server-dev-${PG_MAJOR}" \
-    && rm -rf /var/lib/apt/lists/*
+# Same PGDG timeout flake as the repo-root Dockerfile: retry the fetch.
+RUN set -eux; \
+    echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries; \
+    n=0; \
+    until apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates curl build-essential clang libclang-dev pkg-config \
+        libssl-dev git "postgresql-server-dev-${PG_MAJOR}"; do \
+      n=$((n + 1)); \
+      [ "$n" -lt 5 ] || exit 1; \
+      sleep $((n * 5)); \
+    done; \
+    rm -rf /var/lib/apt/lists/*
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
 ENV PATH=/root/.cargo/bin:$PATH
