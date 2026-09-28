@@ -4,9 +4,72 @@
 
 **Your agents, their tools, their decisions, and the audit trail—in PostgreSQL.**
 
-Allgres turns PostgreSQL into an agent control plane. A PL/pgSQL state machine, a Rust/pgrx runtime worker, outbound HTTP, and a browser dashboard ship as one extension. Create an agent, connect a model, and inspect its work with SQL you already know.
+Allgres makes PostgreSQL the control plane for your agents. Tasks, policies,
+permissions, memory, approvals, and execution history live together in the
+database, where you can inspect and manage them with SQL.
 
-> **Public alpha · `0.1.0-alpha.3`** — built for evaluation. Read the [security model](docs/security.md) and [known limitations](KNOWN_ISSUES.md) before using real data or exposing the dashboard. Report vulnerabilities through [private disclosure](SECURITY.md).
+Create an agent, connect a model, and follow its work from the first request
+to the final result—including the tool calls, approval decisions, and errors
+along the way.
+
+## Why Allgres?
+
+Running an agent means keeping track of more than its conversation.
+What is it allowed to do? Which action needs approval? What happened before
+a worker stopped? Is an external request safe to retry?
+
+Allgres keeps the state and policies needed to answer these questions in
+PostgreSQL. The database records the work and governs how it proceeds.
+
+- **Inspect the work.** Query task state, execution history, and audit records
+  with SQL.
+- **Control execution.** Apply permissions and approval rules to queued
+  actions, with checks at execution boundaries.
+- **Handle uncertainty explicitly.** Track retries and pause ambiguous
+  external mutations for human review.
+- **Operate through familiar tools.** Use the dashboard or PostgreSQL
+  functions to manage agents and their work.
+
+## How it fits together
+
+```text
+Dashboard / SQL
+      |
+      v
+PostgreSQL control plane
+  ├─ Agents and task state
+  ├─ Policies and permissions
+  ├─ Queues and retry state
+  ├─ Memory and tool definitions
+  ├─ Human approvals
+  └─ Execution history and audit records
+      |
+      v
+Rust runtime workers
+      |
+      v
+Model providers and external tools
+```
+
+PostgreSQL owns durable state and control decisions. Rust workers perform
+external I/O and manage the runtime lifecycle. Model inference runs through
+the provider you configure.
+
+A PL/pgSQL state machine, a Rust/pgrx runtime, and a browser dashboard ship
+as one PostgreSQL extension. No separate Node.js, Python, Redis, RabbitMQ,
+or web-server service is required at runtime.
+
+External API calls remain outside the database transaction: recording a
+request in PostgreSQL does not make its remote effects atomic or guarantee
+exactly-once execution.
+
+Read the [architecture](docs/architecture.md) and
+[security model](docs/security.md) for the execution boundaries.
+
+> **Public alpha · `0.1.0-alpha.3`** — built for evaluation.
+> Read the [known limitations](KNOWN_ISSUES.md) before using real data or
+> exposing the dashboard. Report vulnerabilities through
+> [private disclosure](SECURITY.md).
 
 ## Quick start
 
@@ -53,15 +116,14 @@ Install the matching PostgreSQL server development package, C toolchain, and Ope
 
 The [RPM guide](docs/deployment/rpm.md) finds the newest published Fedora 43/PostgreSQL 18 RPM automatically, and also covers building the package from source.
 
-## What runs inside Postgres
+## Explore the documentation
 
-- **Agent execution** — policies, permissions, delegation, retries, budgets, and human approval.
-- **SQL as a governed tool** — agent queries are parsed and run under an unprivileged role. [Sandbox design](docs/sql-sandbox.md).
-- **Search and memory** — agent discovery, `remember`/`recall`, and optional pgvector acceleration. [Memory and search](docs/memory-and-search.md).
-- **An operator dashboard** — agents, chat, approvals, audit, SQL, and settings in one static page. [Model setup](docs/chat-and-models.md).
-- **Inspectability** — task state, policy history, and consequential mutations live in queryable tables. [Architecture](docs/architecture.md) · [Audit log](docs/audit-log.md).
+- [SQL sandbox](docs/sql-sandbox.md) — how agent queries are parsed and run under an unprivileged role.
+- [Memory and search](docs/memory-and-search.md) — agent discovery, `remember`/`recall`, and optional pgvector acceleration.
+- [Chat and model setup](docs/chat-and-models.md) — connect providers and work with agents in the dashboard.
+- [Audit log](docs/audit-log.md) — inspect consequential mutations and operator actions.
 
-No Node, Python, Redis, RabbitMQ, or separate web server is required at runtime. `pgcrypto` and `pgvector` are optional extensions; see [configuration](docs/configuration.md) and [security](docs/security.md) for the tradeoffs.
+`pgcrypto` and `pgvector` are optional extensions; see [configuration](docs/configuration.md) and [security](docs/security.md) for the tradeoffs.
 
 ## Alpha status
 
